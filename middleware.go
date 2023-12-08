@@ -15,7 +15,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
-const tracerName = "github.com/riandyrn/otelchi"
+const tracerName = "github.com/topi314/otelchi"
 
 // Middleware sets up a handler to start tracing the incoming
 // requests. The serverName parameter should describe the name of the
