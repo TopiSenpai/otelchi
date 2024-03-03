@@ -7,11 +7,12 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	"github.com/go-chi/chi/v5"
+	"github.com/topi314/otelchi/internal/semconvutil"
 	"go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel"
 	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.opentelemetry.io/otel/semconv/v1.24.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -169,9 +170,7 @@ func (ow *otelware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx, span := ow.tracer.Start(
 		ctx, spanName,
-		oteltrace.WithAttributes(semconv.NetAttributesFromHTTPRequest("tcp", r)...),
-		oteltrace.WithAttributes(semconv.EndUserAttributesFromHTTPRequest(r)...),
-		oteltrace.WithAttributes(semconv.HTTPServerAttributesFromHTTPRequest(ow.serverName, routePattern, r)...),
+		oteltrace.WithAttributes(semconvutil.HTTPServerRequest(ow.serverName, r)...),
 		oteltrace.WithSpanKind(oteltrace.SpanKindServer),
 	)
 	defer span.End()
@@ -205,12 +204,11 @@ func (ow *otelware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if rrw.status > 0 {
 		// set status code attribute
-		span.SetAttributes(semconv.HTTPStatusCodeKey.Int(rrw.status))
+		span.SetAttributes(semconv.HTTPResponseStatusCodeKey.Int(rrw.status))
 	}
 
 	// set span status
-	spanStatus, spanMessage := semconv.SpanStatusFromHTTPStatusCode(rrw.status)
-	span.SetStatus(spanStatus, spanMessage)
+	span.SetStatus(semconvutil.HTTPServerStatus(rrw.status))
 }
 
 func addPrefixToSpanName(shouldAdd bool, prefix, spanName string) string {
